@@ -1,0 +1,100 @@
+Ques:-
+
+The Nautilus DevOps team want to install and set up a simple httpd web server on all app servers in Stratos DC. They also want to deploy a sample web page using Ansible. Therefore, write the required playbook to complete this task as per details mentioned below.
+
+1. We already have an inventory file under /home/thor/ansible directory on jump host. Write a playbook playbook.yml under /home/thor/ansible directory on jump host itself. Using the playbook perform below given tasks:
+
+2. Install httpd web server on all app servers, and make sure its service is up and running.
+
+3. Create a file /var/www/html/index.html with content:
+
+This is a Nautilus sample file, created using Ansible!
+
+4. Using lineinfile Ansible module add some more content in /var/www/html/index.html file. Below is the content:
+
+Welcome to Nautilus Group!
+
+Also make sure this new line is added at the top of the file.
+
+5. The /var/www/html/index.html file's user and group owner should be apache on all app servers.
+
+6. The /var/www/html/index.html file's permissions should be 0744 on all app servers.
+
+Note: Validation will try to run the playbook using command ansible-playbook -i inventory playbook.yml so please make sure the playbook works this way without passing any extra arguments.
+
+
+
+
+Soln:-
+
+Step 1:- Navigate to the playbook directory
+
+cd /home/thor/ansible/
+
+
+
+Step 2:- Edit the inventory file (with the below content)
+
+vi inventory
+
+[app_servers]
+stapp01 ansible_host=stapp01 ansible_user=tony ansible_ssh_pass=Ir0nM@n ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+stapp02 ansible_host=stapp02 ansible_user=steve ansible_ssh_pass=Am3ric@ ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+stapp03 ansible_host=stapp03 ansible_user=banner ansible_ssh_pass=BigGr33n ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+
+
+Step 3:- Create the Playbook 
+
+vi playbook.yml
+
+---
+- name: Setup httpd web server and deploy sample page
+  hosts: app_servers
+  become: yes
+
+  tasks:
+    - name: Install httpd package
+      yum:
+        name: httpd
+        state: present
+
+    - name: Ensure httpd service is enabled and running
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Create index.html with initial content
+      copy:
+        dest: /var/www/html/index.html
+        content: "This is a Nautilus sample file, created using Ansible!\n"
+
+    - name: Add welcome line at the top of index.html
+      lineinfile:
+        path: /var/www/html/index.html
+        line: "Welcome to Nautilus Group!"
+        insertbefore: BOF
+
+    - name: Set ownership of index.html to apache user and group
+      file:
+        path: /var/www/html/index.html
+        owner: apache
+        group: apache
+
+    - name: Set permissions of index.html to 0744
+      file:
+        path: /var/www/html/index.html
+        mode: '0744'
+
+
+
+Step 4: Test the Server Connectivity
+
+ansible -i inventory all -m ping
+
+
+
+Step 5: Apply the playbook
+
+ansible-playbook -i inventory playbook.yml
